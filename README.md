@@ -33,6 +33,8 @@ The project was built to gain hands-on experience with:
 
 ![alt text](Architecture.png)
 
+- If image not visible then kindly look into images folder
+
 ## Sampling Freq
 
 ## Sampling Configuration
@@ -66,6 +68,10 @@ T_sample = 1 / 10 KHz = 100 µs
 Therefore, the ADC performs one conversion every **100 µs**, resulting in a sampling rate of **10 kSamples/s**.
 
 ## Packetization
+
+![alt text](Packet_format.png)
+
+- If image not visible then kindly look into images folder
 
 - ADC DMA buffer length: **400 samples**
 - ADC sample size: **16 bits (2 bytes)**
