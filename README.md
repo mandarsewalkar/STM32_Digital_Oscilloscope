@@ -2,8 +2,6 @@
 
 A real-time digital oscilloscope built using STM32F446RE, ADC DMA acquisition, UART DMA streaming, and a Python-based visualization interface.
 
-=======
-
 ## Performance
 
 - ADC Resolution: 12-bit
@@ -27,11 +25,9 @@ The project was built to gain hands-on experience with:
 - Real-time data acquisition
 - Signal visualization using Python
 
-=======
-
 ## System Architecture
 
-![alt text](Architecture.png)
+![alt text](Images/Architecture.png)
 
 - If image not visible then kindly look into images folder
 
@@ -69,10 +65,6 @@ Therefore, the ADC performs one conversion every **100 µs**, resulting in a sam
 
 ## Packetization
 
-![alt text](Packet_format.png)
-
-- If image not visible then kindly look into images folder
-
 - ADC DMA buffer length: **400 samples**
 - ADC sample size: **16 bits (2 bytes)**
 - DMA operates in **circular mode**
@@ -97,7 +89,7 @@ Therefore, the ADC performs one conversion every **100 µs**, resulting in a sam
 
 ### Packet Format
 
-![alt text](Packet_format.png)
+![alt text](Images/Packet_format.png)
 
 ## Oscilloscope Bandwidth
 
@@ -188,7 +180,23 @@ Images/
 5. Packets are decoded and displayed as a waveform.
 6. Triggering and cursor measurements are performed on the PC.
 
-=======
+## Outputs
+
+![alt_text](Images/Outputs_images/Sine-wave%20example.png)
+
+- Sine wave generated using DAC on F446RE
+
+![alt_text](Images/Outputs_images/Square_wave_eg_1.png)
+
+- Square wave generated using TIM3 on F446RE
+
+![alt_text](Images/Outputs_images/Square_wave_eg_3.png)
+
+- Square wave with cursors
+
+![alt_text](Images/Outputs_images/Square_wave_eg_2.png)
+
+- Rise time measurements using cursors
 
 ## Challenges Faced
 
