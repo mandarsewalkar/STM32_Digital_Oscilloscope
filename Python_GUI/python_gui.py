@@ -1,5 +1,8 @@
 import matplotlib
-matplotlib.use('MacOSX')
+import platform
+
+if platform.system() == "Darwin":
+    matplotlib.use("MacOSX")
 
 import serial
 import numpy as np
@@ -15,6 +18,8 @@ import time
 
 pan_offset = 0
 
+# Show a few samples before the trigger event
+# so the waveform does not start abruptly.
 PRE_TRIGGER = 20
 
 print("OPENING SERIAL PORT...")
@@ -25,15 +30,18 @@ ser = serial.Serial(
     timeout=0.01
 )
 
-# CLEAR OLD SERIAL DATA
+# Discard any prev bytes that may have been left in the UART buffer from a previous run.
 ser.reset_input_buffer()
 
 print("SERIAL PORT OPENED")
 
 # -----------------------------------
-# PACKET SETTINGS
+# PACKET Params
 # -----------------------------------
 
+# Every UART packet begins with 0xAA55.
+# The receiver uses this pattern to recover
+# synchronization if bytes are dropped.
 HEADER = b'\xAA\x55'
 
 BUF_SAMPLES = 200
@@ -80,9 +88,6 @@ plt.grid(True)
 
 plt.subplots_adjust(bottom=0.25)
 
-# -----------------------------------
-# SLIDER
-# -----------------------------------
 
 slider_ax = plt.axes([0.2, 0.1, 0.6, 0.03])
 
@@ -95,9 +100,6 @@ sample_slider = Slider(
     valstep=100
 )
 
-# -----------------------------------
-# PAN SLIDER
-# -----------------------------------
 
 pan_slider_ax = plt.axes([0.2, 0.05, 0.6, 0.03])
 
@@ -110,10 +112,6 @@ pan_slider = Slider(
     valstep=1
 )
 
-# -----------------------------------
-# PAN LEFT BUTTON
-# -----------------------------------
-
 pan_left_ax = plt.axes([0.85, 0.03, 0.03, 0.03])
 
 pan_left_button = Button(
@@ -121,20 +119,12 @@ pan_left_button = Button(
     "▼"
 )
 
-# -----------------------------------
-# PAN RIGHT BUTTON
-# -----------------------------------
-
 pan_right_ax = plt.axes([0.85, 0.07, 0.03, 0.03])
 
 pan_right_button = Button(
     pan_right_ax,
     "▲"
 )
-
-# -----------------------------------
-# CHECKBOX
-# -----------------------------------
 
 # FREEZE 
 
@@ -156,15 +146,16 @@ cursor_checkbox = CheckButtons(
     [False]
 )
 
-# -----------------------------------
-# GLOBALS
-# -----------------------------------
-
 cursor_mode = False
 
 packet_count = 0
 
+# When enabled, acquisition pauses and the user can
+# inspect captured data using pan and cursor controls.
+
 python_freeze = False
+
+# Rising-edge trigger threshold in volts.
 
 TRIGGER_LEVEL = 1.65
 
@@ -244,6 +235,14 @@ cursor_checkbox.on_clicked(cursor_callback)
 # FIND VALID PACKET
 # -----------------------------------
 
+"""
+Search the incoming UART stream for a valid packet.
+
+Since UART is a continuous byte stream, packet boundaries
+can be lost after corruption or startup. This function
+scans for the packet header and returns a valid payload.
+"""
+
 def find_packet():
 
     max_search = 500
@@ -255,8 +254,6 @@ def find_packet():
         if len(byte1) == 0:
             return None
 
-        # DEBUG
-        # print("BYTE1 =", byte1.hex())
 
         if byte1 == b'\xAA':
 
@@ -265,13 +262,9 @@ def find_packet():
             if len(byte2) == 0:
                 return None
 
-            # DEBUG
-            # print("BYTE2 =", byte2.hex())
 
             if byte2 == b'\x55':
 
-                # DEBUG
-                # print("VALID HEADER")
 
                 payload = ser.read(PAYLOAD_SIZE)
 
@@ -286,9 +279,6 @@ def find_packet():
                     dtype='<u2'
                 )
 
-                # DEBUG
-                # print(data[:10])
-
                 return data
 
     print("SYNC LOST")
@@ -298,6 +288,9 @@ def find_packet():
 # -----------------------------------
 # TRIGGER DETECTION
 # -----------------------------------
+
+# Trigger on a rising threshold crossing.
+# The trigger fires only when the signal moves from below the threshold to above it.
 
 def find_trigger(data):
 
@@ -368,15 +361,11 @@ def update_display_samples(val):
 
 sample_slider.on_changed(update_display_samples)
 
-# -----------------------------------
-# UPDATE LOOP
-# -----------------------------------
-
-# -----------------------------------
-# UPDATE LOOP
-# -----------------------------------
-
 frame_counter = 0
+
+# -----------------------------------
+# UPDATE LOOP
+# -----------------------------------
 
 def update(frame):
 
@@ -407,11 +396,18 @@ def update(frame):
 
     if not python_freeze:
 
+        # Consume all available packets and keep the most
+        # recent waveform. This prevents display lag if
+        # packets arrive faster than the GUI refresh rate.
+        
         while ser.in_waiting >= (2 + PAYLOAD_SIZE):
 
             raw_data = find_packet()
 
             if raw_data is not None:
+
+                # Convert raw 12-bit ADC counts into volts.
+                # Assumes a 3.3V reference voltage.
 
                 latest_data = (
                     raw_data.astype(np.float32) / 4095.0
@@ -478,6 +474,9 @@ def update(frame):
 
                 end_index = sweep_index + BUF_SAMPLES
 
+                # Current sweep has filled the visible window.
+                # Clear the buffer and wait for the next sweep.
+
                 if end_index >= current_display_samples:
 
                     sweep_index = 0
@@ -513,6 +512,10 @@ def update(frame):
     # -----------------------------------
     # DISPLAY / PAN VIEW
     # -----------------------------------
+    
+    # Freeze mode stops acquisition and allows
+    # the user to inspect captured data using
+    # pan and measurement cursors.
 
     if python_freeze:
 
@@ -548,10 +551,6 @@ def update(frame):
     )
 
     return line,
-
-# -----------------------------------
-# CURSOR CALLBACKS
-# -----------------------------------
 
 h_cursor1 = ax.axhline(1.0, ls='--', lw=2)
 h_cursor2 = ax.axhline(2.0, ls='--', lw=2)
@@ -593,6 +592,10 @@ def update_cursor_text():
 
     freq = 0
 
+
+    # Estimate signal frequency from the
+    # distance between the two vertical cursors.
+
     if dt > 0:
         freq = 1.0 / dt
 
@@ -618,6 +621,9 @@ def on_press(event):
 
     x = event.xdata
     y = event.ydata
+
+    # Scale selection tolerance with the current
+    # zoom level so cursor dragging remains usable.
 
     x_tol = (ax.get_xlim()[1] - ax.get_xlim()[0]) * 0.01
     y_tol = (ax.get_ylim()[1] - ax.get_ylim()[0]) * 0.02
@@ -695,10 +701,6 @@ fig.canvas.mpl_connect(
     'button_release_event',
     on_release
 )
-
-# -----------------------------------
-# ANIMATION
-# -----------------------------------
 
 print("STARTING ANIMATION")
 

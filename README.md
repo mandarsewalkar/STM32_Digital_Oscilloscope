@@ -2,6 +2,10 @@
 
 A real-time digital oscilloscope built using STM32F446RE, ADC DMA acquisition, UART DMA streaming, and a Python-based visualization interface.
 
+## Demo
+
+[!Demo_vid](Images/oscilloscope_demo.gif)
+
 ## Performance
 
 - ADC Resolution: 12-bit
@@ -138,9 +142,46 @@ The usable bandwidth is lower than the theoretical limit due to several system c
 
 ## Hardware
 
+### requirements
+
 - STM32F446RE
 - USB UART connection
 - Analog input source / STM32F446RE
+
+### connections
+
+#### external
+
+For external signal acquisition:
+
+- The **A0 (Analog Input)** pin on the STM32F446RE is used as the ADC input.
+- Connect the signal source positive terminal to **A0**.
+- Connect the signal source ground to **GND** on the STM32 board.
+
+#### internal (testing)
+
+![alt_text](Images/Nucleo-F446RE_Pinout.png)
+
+For testing without external equipment, the firmware can generate test waveforms internally.
+
+- **TIM3** is configured to generate a square wave.
+- **DAC1** is configured to generate a sine wave.
+
+#### Square Wave Test
+
+Connect:
+
+```text
+D7  --->  A0
+```
+
+#### Sine Wave Test
+
+Connect:
+
+```text
+A2  --->  A0
+```
 
 ## Software
 
@@ -198,6 +239,27 @@ Images/
 
 - Rise time measurements using cursors
 
+## Installation
+
+Clone the repository:
+
+```bash
+git clone <repo-url>
+cd STM32_Digital_Oscilloscope
+```
+
+Install Python dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Run the GUI:
+
+```bash
+python oscilloscope.py
+```
+
 ## Challenges Faced
 
 ### Packet Synchronization
@@ -213,7 +275,8 @@ Packet headers were introduced for synchronization.
 
 ## Limitation (ver 1)
 
-- Can't plot sinwave with less that 500Hz freq accurately
-- Can't plot sinwave with less that 200Hz freq accurately because of GUI issue
-- Voltage span limited from 0 - 3.3v
-- Fixed sampling rate for ADC
+- Low-frequency waveforms (<500 Hz) experience display distortion due to the current GUI sweep implementation.
+- Very low-frequency signals (<200 Hz) require improvements to triggering and rendering logic.
+- Input voltage range limited to 0–3.3 V.
+- Sampling rate is fixed at compile time.
+- Single-channel acquisition only.

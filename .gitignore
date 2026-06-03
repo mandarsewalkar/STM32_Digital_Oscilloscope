@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.env
+
+# STM32
+build/
+Debug/
+Release/
+*.launch
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+# Screen recordings
+*.mov
