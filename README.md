@@ -4,7 +4,7 @@ A real-time digital oscilloscope built using STM32F446RE, ADC DMA acquisition, U
 
 ## Demo
 
-[!Demo_vid](Images/oscilloscope_demo.gif)
+![Demo_vid](Images/oscilloscope_demo.gif)
 
 ## Performance
 
